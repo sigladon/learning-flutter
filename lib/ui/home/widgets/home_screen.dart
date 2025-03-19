@@ -1,11 +1,15 @@
-import 'dart:async';
-import 'dart:developer' as developer;
+
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
+import 'package:image_flutter_isar/domain/models/user_image/user_image.dart';
 import 'package:image_flutter_isar/routing/routes.dart';
-import 'package:image_flutter_isar/data/services/isar/isar_client.dart';
 import 'package:image_flutter_isar/ui/home/view_models/home_viewmodel.dart';
+import 'package:image_flutter_isar/utils/result.dart';
+
+import 'dart:developer' as dev;
+
 import 'package:image_picker/image_picker.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -20,102 +24,147 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
 
+  @override
+  void initState() {
+    super.initState();
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      // appBar: _buildAppBar(context),
-      // body: SafeArea(
-      //   top: true,
-      //   bottom: true,
-      //   child: FutureBuilder<List<String>?>(
-      //     future: _readImagesFromDatabase(),
-      //     builder: (context, snapshot) {
-      //       if (snapshot.connectionState == ConnectionState.waiting) {
-      //         return const CircularProgressIndicator();
-      //       } else if (snapshot.hasError) {
-      //         return Text("Error appeared ${snapshot.error}");
-      //       } else if (snapshot.hasData && snapshot.data!.isNotEmpty) {
-      //         return ListView.builder(
-      //           addAutomaticKeepAlives: false,
-      //           itemCount: snapshot.data!.length,
-      //           itemBuilder:(context, index) {
-      //             final imagePath = snapshot.data![index];
-      //             final imageFile = File(imagePath);
-                      
-      //             if (imageFile.existsSync()) {
-      //               return Padding(
-      //                 padding: const EdgeInsets.all(12),
-      //                 child: Image.file(
-      //                   imageFile,
-      //                   height: 400,
-      //                   cacheHeight: 1080,
-      //                   scale: 2.0,
-      //                   fit: BoxFit.fitWidth,
-      //                 ),
-      //               );
-      //             } else {
-      //               // La imagen no existe, mostrar un placeholder o omitir
-      //               return null;
-      //             }
-      //           },
-      //         );
-      //       } else {
-      //         return const Center(child: Text("No hay imágenes para mostrar"));
-      //       }
-      //     },
-      //   ),
-      // ),
+      appBar: AppBar(
+        title: Text(widget.title),
+        actions: <Widget>[UploadOptionsMenu(viewModel: widget.viewModel)],
+      ),
+      body: SafeArea(
+        top: true,
+        bottom: true,
+        child: ListenableBuilder(
+          listenable: widget.viewModel.load,
+          builder: (context, child) {
+            dev.log("Checking if its running");
+            if (widget.viewModel.load.isExecuting.value) {
+              dev.log("It's RUNNING");
+              return const Center(child: CircularProgressIndicator());
+            }
+            // if (widget.viewModel.load.) {
+            //   return Text("Error");
+            // }
+
+            return child!;
+          },
+          child: ListenableBuilder(
+            listenable: widget.viewModel,
+            builder: (context, _) {
+              return CustomScrollView(
+                slivers: [
+                  SliverPadding(
+                    padding: EdgeInsets.symmetric(horizontal: 12),
+                    sliver: SliverList.builder(
+                      itemCount: widget.viewModel.userImages.length,
+                      itemBuilder: (_, index) {
+                        dev.log("Rendering Isar entries");
+                        return Column(
+                          children: [
+                            Text(widget.viewModel.userImages[index].title),
+
+                            Padding(
+                              padding: const EdgeInsets.all(12.0),
+                              child: Image.file(
+                                File(widget.viewModel.userImages[index].imagePath),
+                                height: 400,
+                                cacheHeight: 1080,
+                                scale: 2.0,
+                                fit: BoxFit.fitWidth,
+                                key: ValueKey(
+                                  widget.viewModel.userImages[index].imagePath,
+                                ),
+                              ),
+                            ),
+                          ],
+                        );
+                      },
+                    ),
+                  ),
+                ],
+              );
+            },
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class UploadOptionsMenu extends StatefulWidget {
+  const UploadOptionsMenu({super.key, required this.viewModel});
+  final HomeViewModel viewModel;
+
+  @override
+  State<UploadOptionsMenu> createState() => _UploadOptionsMenuState();
+}
+
+class _UploadOptionsMenuState extends State<UploadOptionsMenu> {
+  final FocusNode _buttonFocusNode = FocusNode(debugLabel: 'Menu Button');
+
+  @override
+  void dispose() {
+    _buttonFocusNode.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return MenuAnchor(
+      childFocusNode: _buttonFocusNode,
+      menuChildren: <Widget>[
+        Padding(
+          padding: const EdgeInsets.only(right: 12, left: 4),
+          child: MenuItemButton(
+            onPressed: () {
+              _selectMedia(context, ImageSource.gallery);
+            },
+            leadingIcon: const Icon(Icons.photo_library),
+            child: const Text('Gallery'),
+          ),
+        ),
+        Padding(
+          padding: const EdgeInsets.only(right: 12, left: 4),
+          child: MenuItemButton(
+            onPressed: () {
+              _selectMedia(context, ImageSource.camera);
+            },
+            leadingIcon: const Icon(Icons.camera_alt),
+            child: const Text('Camera'),
+          ),
+        ),
+      ],
+      builder: (_, MenuController controller, Widget? child) {
+        return TextButton.icon(
+          iconAlignment: IconAlignment.start,
+          label: Text('New'),
+          focusNode: _buttonFocusNode,
+          onPressed: () {
+            if (controller.isOpen) {
+              controller.close();
+            } else {
+              controller.open();
+            }
+          },
+          icon: const Icon(Icons.add),
+        );
+      },
     );
   }
 
-  // Future<void> _mostrarModalSeleccion(BuildContext context) async {
-  //   if (!context.mounted) return;
-  //   showModalBottomSheet(
-  //     context: context,
-  //     builder: (BuildContext context) {
-  //       return SafeArea(
-  //         child: Wrap(
-  //           children: <Widget>[
-  //             ListTile(
-  //               leading: Icon(Icons.photo_library),
-  //               title: Text('Gallery'),
-  //               onTap: () {
-  //                 Navigator.pop(context); // Cierra el modal
-  //                 _seleccionarImagen(context, ImageSource.gallery);
-  //               },
-  //             ),
-  //             ListTile(
-  //               leading: Icon(Icons.camera_alt),
-  //               title: Text('Camera'),
-  //               onTap: () {
-  //                 Navigator.pop(context); // Cierra el modal
-  //                 _seleccionarImagen(context, ImageSource.camera);
-  //               },
-  //             ),
-  //           ],
-  //         ),
-  //       );
-  //     },
-  //   );
-  // }
-
-  // Future<void> _seleccionarImagen(BuildContext context, ImageSource source) async {
-  //   final picker = ImagePicker();
-  //   final pickedFile = await picker.pickImage(source: source);
-
-  //   if (pickedFile != null) {
-  //     final result = await Navigator.pushNamed(
-  //       routeUpload, 
-  //       arguments: pickedFile.path
-  //     );
-  //     if(result == true) {
-  //       setState(() {
-          
-  //       });
-  //     }
-  //   } else if (pickedFile != null && !context.mounted) {
-  //     developer.log('My HomePage no está montado');
-  //   }
-  // }
+  void _selectMedia(BuildContext context, ImageSource source) async {
+    dev.log('Executing pickImageCommand for source: $source');
+    Result<UserImage?> result = await widget.viewModel.pickImage.executeWithFuture(source);
+    if (result is Ok<UserImage?> && context.mounted && result.value != null) {
+      dev.log('showing upload screen with ${result.value} image');
+      context.push(routeUpload, extra: result.value);
+    } else {
+      dev.log('staying in Home Screen');
+    }
+  }
 }

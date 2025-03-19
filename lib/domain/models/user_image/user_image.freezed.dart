@@ -162,14 +162,15 @@ class __$$UserImageImplCopyWithImpl<$Res>
 
 /// @nodoc
 @JsonSerializable()
-class _$UserImageImpl implements _UserImage {
+class _$UserImageImpl extends _UserImage {
   const _$UserImageImpl(
       {required this.imagePath,
       required this.dateCreated,
       required this.dateModified,
       required this.title,
       required this.location,
-      required this.hasSync});
+      required this.hasSync})
+      : super._();
 
   factory _$UserImageImpl.fromJson(Map<String, dynamic> json) =>
       _$$UserImageImplFromJson(json);
@@ -228,7 +229,7 @@ class _$UserImageImpl implements _UserImage {
   }
 }
 
-abstract class _UserImage implements UserImage {
+abstract class _UserImage extends UserImage {
   const factory _UserImage(
       {required final String imagePath,
       required final DateTime dateCreated,
@@ -236,6 +237,7 @@ abstract class _UserImage implements UserImage {
       required final String title,
       required final String location,
       required final bool hasSync}) = _$UserImageImpl;
+  const _UserImage._() : super._();
 
   factory _UserImage.fromJson(Map<String, dynamic> json) =
       _$UserImageImpl.fromJson;

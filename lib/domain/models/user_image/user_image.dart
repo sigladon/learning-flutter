@@ -4,7 +4,9 @@ part 'user_image.freezed.dart';
 part 'user_image.g.dart';
 
 @freezed
-class UserImage with _$UserImage {
+abstract class UserImage with _$UserImage {
+  const UserImage._();
+
   const factory UserImage({
     required String imagePath,
     required DateTime dateCreated,
@@ -15,5 +17,21 @@ class UserImage with _$UserImage {
   }) = _UserImage;
   
   factory UserImage.fromJson(Map<String, Object?> json) => _$UserImageFromJson(json);
+  
+  UserImage setTitle(String newTitle) {
+    return copyWith(title: newTitle);
+  }
+
+  UserImage setLocation(String newLocation) {
+    return copyWith(location: newLocation);
+  }
+
+  UserImage setDateModified(DateTime newDateModified) {
+    return copyWith(dateModified: newDateModified);
+  }
+
+  UserImage setHasSync(bool newHasSync) {
+    return copyWith(hasSync: newHasSync);
+  }
   
 }

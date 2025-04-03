@@ -10,25 +10,21 @@ class UserImageRepository {
     
   final IsarClient _isarClient;
     
-  List<UserImage> _cachedData = [];
 
   Future<Result<List<UserImage>>> getImagesList() async {
-    if (_cachedData.isEmpty) {
+    try {
       final result = await _isarClient.getImages();
       dev.log("Loading from isar");
-      if (result is Ok<List<UserImage>>) {
-        _cachedData = result.value;
-      }
       return result;
-    } else {
-      dev.log("Loading from cache");
-      return Result.success(_cachedData);
+    } on Exception catch (error) {
+      dev.log("Error loading from isar");
+      return Result.failure(error);
     }
   }
 
   // Future<Result<UserImage>> getImage(int id);
   
-  Future<Result<void>> uploadImage(UserImage image) async {
+  Future<Result<void>> saveImageToUpload(UserImage image) async {
     try {
       final result = await _isarClient.storeImage(image);
       return result;

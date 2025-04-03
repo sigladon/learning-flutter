@@ -1,4 +1,3 @@
-
 import 'dart:io';
 
 import 'package:flutter/material.dart';
@@ -11,6 +10,7 @@ import 'package:image_flutter_isar/utils/result.dart';
 import 'dart:developer' as dev;
 
 import 'package:image_picker/image_picker.dart';
+import 'package:provider/provider.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key, required this.title, required this.viewModel});
@@ -23,10 +23,13 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-
+  final GlobalKey<RefreshIndicatorState> _refreshIndicatorKey = GlobalKey<RefreshIndicatorState>();
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      Provider.of<HomeViewModel>(context, listen:false).load.execute();
+    },);
   }
 
   @override
@@ -39,56 +42,76 @@ class _HomeScreenState extends State<HomeScreen> {
       body: SafeArea(
         top: true,
         bottom: true,
-        child: ListenableBuilder(
-          listenable: widget.viewModel.load,
-          builder: (context, child) {
-            dev.log("Checking if its running");
-            if (widget.viewModel.load.isExecuting.value) {
-              dev.log("It's RUNNING");
-              return const Center(child: CircularProgressIndicator());
-            }
-            // if (widget.viewModel.load.) {
-            //   return Text("Error");
-            // }
-
-            return child!;
+        child: RefreshIndicator(
+          key: _refreshIndicatorKey,
+          strokeWidth: 4,
+          onRefresh: () async {
+            await widget.viewModel.load.executeWithFuture();
           },
           child: ListenableBuilder(
-            listenable: widget.viewModel,
-            builder: (context, _) {
-              return CustomScrollView(
-                slivers: [
-                  SliverPadding(
-                    padding: EdgeInsets.symmetric(horizontal: 12),
-                    sliver: SliverList.builder(
-                      itemCount: widget.viewModel.userImages.length,
-                      itemBuilder: (_, index) {
-                        dev.log("Rendering Isar entries");
-                        return Column(
-                          children: [
-                            Text(widget.viewModel.userImages[index].title),
-
-                            Padding(
-                              padding: const EdgeInsets.all(12.0),
-                              child: Image.file(
-                                File(widget.viewModel.userImages[index].imagePath),
-                                height: 400,
-                                cacheHeight: 1080,
-                                scale: 2.0,
-                                fit: BoxFit.fitWidth,
-                                key: ValueKey(
-                                  widget.viewModel.userImages[index].imagePath,
+            listenable: widget.viewModel.load,
+            builder: (context, child) {
+              dev.log("Checking if its running");
+              if (widget.viewModel.load.isExecuting.value) {
+                dev.log("It's RUNNING");
+                return const Center(child: CircularProgressIndicator());
+              }
+              // if (widget.viewModel.load.) {
+              //   return Text("Error");
+              // }
+          
+              return child!;
+            },
+            child: ListenableBuilder(
+              listenable: widget.viewModel,
+              builder: (context, _) {
+                return CustomScrollView(
+                  slivers: [
+                    SliverPadding(
+                      padding: EdgeInsets.symmetric(horizontal: 12),
+                      sliver: SliverList.builder(
+                        itemCount: widget.viewModel.userImages.length,
+                        itemBuilder: (_, index) {
+                          dev.log("Rendering Isar entries");
+                          return Column(
+                            children: [
+                              Text(
+                                widget.viewModel.userImages[index].title,
+                                style: TextStyle(fontSize: 20),
+                              ),
+                              Text(
+                                widget.viewModel.userImages[index].location,
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontStyle: FontStyle.italic,
+                                  fontWeight: FontWeight.w100,
                                 ),
                               ),
-                            ),
-                          ],
-                        );
-                      },
+          
+                              Padding(
+                                padding: const EdgeInsets.all(12.0),
+                                child: Image.file(
+                                  File(
+                                    widget.viewModel.userImages[index].imagePath,
+                                  ),
+                                  height: 400,
+                                  cacheHeight: 1080,
+                                  scale: 2.0,
+                                  fit: BoxFit.fitWidth,
+                                  key: ValueKey(
+                                    widget.viewModel.userImages[index].imagePath,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          );
+                        },
+                      ),
                     ),
-                  ),
-                ],
-              );
-            },
+                  ],
+                );
+              },
+            ),
           ),
         ),
       ),
@@ -159,7 +182,8 @@ class _UploadOptionsMenuState extends State<UploadOptionsMenu> {
 
   void _selectMedia(BuildContext context, ImageSource source) async {
     dev.log('Executing pickImageCommand for source: $source');
-    Result<UserImage?> result = await widget.viewModel.pickImage.executeWithFuture(source);
+    Result<UserImage?> result = await widget.viewModel.pickImage
+        .executeWithFuture(source);
     if (result is Ok<UserImage?> && context.mounted && result.value != null) {
       dev.log('showing upload screen with ${result.value} image');
       context.push(routeUpload, extra: result.value);

@@ -38,7 +38,7 @@ class IsarClient {
       return Result.failure(Exception("Isar is not initializated"));
     }
     try {
-      final images = await _isar!.isarUserImages.where().findAll();
+      final images = await _isar!.isarUserImages.where().sortByCreatedTimeDesc().findAll();
       return Result.success(
         images.map(
           (image) => UserImage(

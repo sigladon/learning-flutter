@@ -1,4 +1,5 @@
 import 'dart:developer' as developer;
+import 'dart:io';
 
 import 'package:http/http.dart' as http;
 import 'package:image_flutter_isar/data/services/isar/models/isar_user_image.dart';
@@ -17,12 +18,11 @@ class ApiClient {
       final response = await request.send();
       if (response.statusCode == 201) {
         developer.log('Error ${response.statusCode} while uploading image');
-        return Result.success(null);
+        return Result.failure(HttpException('Invalid response'));
       }
-
       return Result.success(null);
-    } on Exception catch (error) {
-      return Result.failure(error);
+    } on Exception catch (exception) {
+      return Result.failure(exception);
     }
   }
 }

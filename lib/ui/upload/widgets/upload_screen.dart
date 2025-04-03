@@ -2,8 +2,9 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:image_flutter_isar/domain/models/user_image/user_image.dart';
+import 'package:image_flutter_isar/ui/home/view_models/home_viewmodel.dart';
 import 'package:image_flutter_isar/ui/upload/view_models/upload_viewmodel.dart';
+import 'package:provider/provider.dart';
 
 class UploadScreen extends StatefulWidget {
   const UploadScreen({
@@ -28,7 +29,6 @@ class _UploadScreenState extends State<UploadScreen> {
   
   @override
   void initState() {
-    // TODO: implement initState
     super.initState();
     _titleController = TextEditingController(text: widget.viewModel.selectedImage.title);
     _locationController = TextEditingController(text: widget.viewModel.selectedImage.location);
@@ -74,7 +74,7 @@ class _UploadScreenState extends State<UploadScreen> {
                   Image.file(File(widget.viewModel.selectedImage.imagePath)),
                   TextFormField(
                     controller: _titleController,
-                    decoration: _uploadFormInputDecoration('Name'),
+                    decoration: _uploadFormInputDecoration('Title'),
                     validator: (value) {
                       if (value == null || value.isEmpty) {
                         return 'Please, enter a title';
@@ -87,7 +87,7 @@ class _UploadScreenState extends State<UploadScreen> {
                     decoration: _uploadFormInputDecoration('Location'),
                     validator: (value) {
                       if (value == null || value.isEmpty) {
-                        return 'Please, enter a title';
+                        return 'Please, enter a location';
                       }
                       return null;
                     },
@@ -100,11 +100,15 @@ class _UploadScreenState extends State<UploadScreen> {
                         if (_formKey.currentState!.validate()) {
                           // If the form is valid, display a snackbar. In the real world,
                           final imageToUpload = widget.viewModel.selectedImage.setTitle(_titleController.text).setLocation(_locationController.text);
-                          widget.viewModel.upload.executeWithFuture(imageToUpload);
+                          widget.viewModel.upload.executeWithFuture(imageToUpload).then((_) {
+                            if (context.mounted) {
+                              Provider.of<HomeViewModel>(context, listen: false).load.execute();
+                            context.pop();
+                            }
+                          });
                           ScaffoldMessenger.of(context).showSnackBar(
                             const SnackBar(content: Text('Processing Data')),
                           );
-                          context.pop();
                         }
                       },
                       child: const Text('Upload'),
@@ -128,7 +132,7 @@ class _UploadScreenState extends State<UploadScreen> {
   }
   Future<bool> _onWillPop() async {
     final modifiedImage = widget.viewModel.selectedImage.setLocation(_locationController.text).setTitle(_titleController.text);
-    if (widget.viewModel.selectedImage != modifiedImage) {
+    if (widget.viewModel.selectedImage.title == "" || widget.viewModel.selectedImage != modifiedImage) {
       return await showDialog(
             context: context,
             builder: (context) => AlertDialog(

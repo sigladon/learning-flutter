@@ -25,7 +25,7 @@ class UploadViewmodel extends ChangeNotifier {
 
   Future<Result<void>> _upload(UserImage image) async {
     try {
-      final result = await _imageRepository.uploadImage(image);
+      final result = await _imageRepository.saveImageToUpload(image);
       return result;
     } on Exception catch (error) {
       return Result.failure(error);
